@@ -1,5 +1,4 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import list as List
 
 
 class Settings(BaseSettings):
@@ -21,17 +20,17 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://localhost:3000"
 
     # ── Database (Railway PostgreSQL) ─────────────────────────
-    DATABASE_URL: str  # e.g. postgresql+asyncpg://user:pass@host:5432/db
+    DATABASE_URL: str = "postgresql+asyncpg://user:pass@localhost:5432/eugenia"
 
     # ── Auth / JWT ────────────────────────────────────────────
-    SECRET_KEY: str       # openssl rand -hex 32
+    SECRET_KEY: str = "change-me-in-production-use-openssl-rand-hex-32"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24        # 24h
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
 
     # ── Google OAuth ──────────────────────────────────────────
-    GOOGLE_CLIENT_ID: str
-    GOOGLE_CLIENT_SECRET: str
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
     # Redirect URI registered in Google Cloud Console
     # Dev:  http://localhost:8000/api/auth/google/callback
     # Prod: https://your-api.up.railway.app/api/auth/google/callback
