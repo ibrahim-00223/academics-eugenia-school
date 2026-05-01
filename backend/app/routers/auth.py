@@ -1,17 +1,16 @@
-from datetime import timedelta
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+import secrets
+import urllib.parse
+from fastapi import APIRouter, Depends, HTTPException, Response, status, Cookie
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from authlib.integrations.httpx_client import AsyncOAuth2Client
+import httpx
 
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import create_access_token, create_refresh_token, verify_token, is_email_allowed
 from app.core.deps import get_current_user
 from app.models.user import User
-
-import httpx
 
 router = APIRouter()
 
@@ -26,12 +25,17 @@ COOKIE_SAMESITE = "lax"
 @router.get("/google")
 async def google_login():
     """Redirect user to Google OAuth consent screen."""
-    client = AsyncOAuth2Client(
-        client_id=settings.GOOGLE_CLIENT_ID,
-        redirect_uri=settings.GOOGLE_REDIRECT_URI,
-        scope="openid email profile",
-    )
-    uri, state = client.create_authorization_url(GOOGLE_AUTH_URL)
+    state = secrets.token_urlsafe(32)
+    params = urllib.parse.urlencode({
+        "client_id": settings.GOOGLE_CLIENT_ID,
+        "redirect_uri": settings.GOOGLE_REDIRECT_URI,
+        "scope": "openid email profile",
+        "response_type": "code",
+        "access_type": "offline",
+        "prompt": "consent",
+        "state": state,
+    })
+    uri = f"{GOOGLE_AUTH_URL}?{params}"
     response = RedirectResponse(url=uri)
     # Store state in a short-lived cookie for CSRF protection
     response.set_cookie(

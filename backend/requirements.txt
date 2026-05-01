@@ -10,8 +10,6 @@ alembic==1.14.0
 
 # ── Auth & Security ───────────────────────────────────────────
 python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
-authlib==1.4.1
 httpx==0.28.1
 
 # ── Validation ────────────────────────────────────────────────
@@ -19,22 +17,21 @@ pydantic==2.10.4
 pydantic-settings==2.7.0
 email-validator==2.2.0
 
-# ── AI & Scraping ─────────────────────────────────────────────
+# ── AI ────────────────────────────────────────────────────────
 anthropic==0.45.0
 openai==1.59.9
-apify-client==1.8.1
 
-# ── Scraping utils ────────────────────────────────────────────
+# ── Scraping ──────────────────────────────────────────────────
+apify-client==1.8.1
 feedparser==6.0.11
 beautifulsoup4==4.12.3
 
-# ── PDF Reports (pure-Python only — no system deps) ───────────
+# ── PDF ───────────────────────────────────────────────────────
 reportlab==4.3.0
 
-# ── Task scheduling ───────────────────────────────────────────
+# ── Scheduling ────────────────────────────────────────────────
 apscheduler==3.11.0
 
 # ── Utilities ─────────────────────────────────────────────────
 python-dateutil==2.9.0
-pytz==2024.2
 tenacity==9.0.0
