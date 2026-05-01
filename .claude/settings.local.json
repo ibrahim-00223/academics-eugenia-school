@@ -12,7 +12,14 @@
       "Bash(mv .nvmrc .node-version frontend/)",
       "Bash(mv node_modules frontend/)",
       "Bash(mv railway.toml frontend/railway.toml)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "Bash(git commit -m 'fix: remove invalid typing import + add defaults to required settings *)",
+      "Bash(git commit -m 'fix: remove authlib/passlib imports causing startup crash *)",
+      "Bash(git commit -m 'fix: register /api/health before routers + log import errors *)",
+      "Bash(git commit -m 'fix: auto-convert postgres:// → postgresql+asyncpg:// in DATABASE_URL *)"
     ]
   }
 }
