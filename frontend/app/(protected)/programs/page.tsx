@@ -1,55 +1,20 @@
-import { createClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { BookOpen, GraduationCap, Plus } from 'lucide-react'
 import Link from 'next/link'
-import type { Database as AppDatabase } from '@/types/database'
+import { apiServer } from '@/lib/api/client'
+import type { Program } from '@/lib/api/types'
 
 export default async function ProgramsPage() {
-  const supabase = await createClient()
+  const cookieStore = await cookies()
+  const cookieHeader = cookieStore.getAll().map((c) => `${c.name}=${c.value}`).join('; ')
 
-  type ProgramWithSemesters = AppDatabase['public']['Tables']['programs']['Row'] & {
-    semesters: Array<{ id: string; number: number; modules: Array<{ id: string }> }>
-  }
+  const programs = await apiServer<Program[]>('/api/programs', cookieHeader).catch(() => [])
 
-  const { data: rawPrograms } = await supabase
-    .from('programs')
-    .select('*')
-    .order('level', { ascending: false })
-    .order('name')
-
-  // Fetch semesters + modules count separately to avoid join type issues
-  const programIds = rawPrograms?.map((p) => p.id) ?? []
-  const { data: semesters } = programIds.length > 0
-    ? await supabase
-        .from('semesters')
-        .select('id, program_id, number')
-        .in('program_id', programIds)
-    : { data: [] }
-
-  const semesterIds = semesters?.map((s) => s.id) ?? []
-  const { data: modules } = semesterIds.length > 0
-    ? await supabase
-        .from('modules')
-        .select('id, semester_id')
-        .in('semester_id', semesterIds)
-        .eq('is_active', true)
-    : { data: [] }
-
-  const programs: ProgramWithSemesters[] = (rawPrograms ?? []).map((p) => ({
-    ...p,
-    semesters: (semesters ?? [])
-      .filter((s) => s.program_id === p.id)
-      .map((s) => ({
-        id: s.id,
-        number: s.number,
-        modules: (modules ?? []).filter((m) => m.semester_id === s.id),
-      })),
-  }))
-
-  const bachelors = programs.filter((p) => p.level === 'bachelor')
-  const masters = programs.filter((p) => p.level === 'master')
+  const bachelors = (programs as Program[]).filter((p) => p.level === 'bachelor')
+  const masters   = (programs as Program[]).filter((p) => p.level === 'master')
 
   return (
     <div className="space-y-6">
@@ -67,8 +32,8 @@ export default async function ProgramsPage() {
       </div>
 
       {[
-        { label: 'Master', icon: GraduationCap, items: masters, color: 'text-purple-500', bg: 'bg-purple-500/10' },
-        { label: 'Bachelor', icon: BookOpen, items: bachelors, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+        { label: 'Master',   icon: GraduationCap, items: masters,   color: 'text-purple-500', bg: 'bg-purple-500/10' },
+        { label: 'Bachelor', icon: BookOpen,       items: bachelors, color: 'text-blue-500',   bg: 'bg-blue-500/10'   },
       ].map(({ label, icon: Icon, items, color, bg }) => (
         <div key={label}>
           <div className="flex items-center gap-2 mb-3">
@@ -84,11 +49,8 @@ export default async function ProgramsPage() {
           {items.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {items.map((program) => {
-                const semesterCount = program.semesters.length
-                const moduleCount = program.semesters.reduce(
-                  (acc, s) => acc + s.modules.length,
-                  0
-                )
+                const semesterCount = program.semester_count ?? 0
+                const moduleCount   = program.module_count   ?? 0
 
                 return (
                   <Link key={program.id} href={`/programs/${program.id}`}>

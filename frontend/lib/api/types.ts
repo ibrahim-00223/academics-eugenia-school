@@ -87,12 +87,14 @@ export interface SkillCluster {
   name: string
   description: string | null
   skill_ids: string[]
+  color: string | null
   is_active: boolean
 }
 
 export interface SalarySimulation {
   id: string
   cluster_id: string
+  cluster_name: string | null
   period_year: number
   period_month: number
   contract_type: string | null
@@ -114,6 +116,8 @@ export interface Program {
   duration_years: number
   description: string | null
   is_active: boolean
+  semester_count: number
+  module_count: number
   created_at: string
   updated_at: string
 }
@@ -152,9 +156,10 @@ export interface Event {
 // ── Reports ───────────────────────────────────────────────────────────────────
 export interface MonthlyReport {
   id: string
+  title: string | null
   period_year: number
   period_month: number
-  report_type: 'monthly' | 'quarterly' | 'annual'
+  report_type: string
   status: 'generating' | 'ready' | 'failed'
   summary_json: Record<string, unknown>
   pdf_storage_path: string | null

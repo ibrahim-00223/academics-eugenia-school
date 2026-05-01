@@ -1,42 +1,42 @@
-import { createClient } from '@/lib/supabase/server'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { cookies } from 'next/headers'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Calendar, Plus, Users, Zap } from 'lucide-react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import { apiServer } from '@/lib/api/client'
+import type { Event } from '@/lib/api/types'
 
 const eventTypeConfig: Record<string, { label: string; color: string }> = {
-  hackathon:   { label: 'Hackathon', color: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' },
-  conference:  { label: 'Conférence', color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400' },
-  workshop:    { label: 'Workshop', color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' },
-  meetup:      { label: 'Meetup', color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' },
+  hackathon:   { label: 'Hackathon',    color: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' },
+  conference:  { label: 'Conférence',   color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400' },
+  workshop:    { label: 'Workshop',     color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' },
+  meetup:      { label: 'Meetup',       color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' },
   career_fair: { label: 'Forum emploi', color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400' },
-  webinar:     { label: 'Webinaire', color: 'bg-rose-500/10 text-rose-600 dark:text-rose-400' },
+  webinar:     { label: 'Webinaire',    color: 'bg-rose-500/10 text-rose-600 dark:text-rose-400' },
 }
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' }> = {
   draft:     { label: 'Brouillon', variant: 'secondary' },
-  confirmed: { label: 'Confirmé', variant: 'default' },
-  completed: { label: 'Terminé', variant: 'outline' },
-  cancelled: { label: 'Annulé', variant: 'secondary' },
+  confirmed: { label: 'Confirmé',  variant: 'default' },
+  completed: { label: 'Terminé',   variant: 'outline' },
+  cancelled: { label: 'Annulé',    variant: 'secondary' },
 }
 
 export default async function EventsPage() {
-  const supabase = await createClient()
+  const cookieStore = await cookies()
+  const cookieHeader = cookieStore.getAll().map((c) => `${c.name}=${c.value}`).join('; ')
 
-  const { data: events } = await supabase
-    .from('events')
-    .select('*')
-    .neq('status', 'cancelled')
-    .order('scheduled_date', { ascending: true, nullsFirst: false })
+  const events = await apiServer<Event[]>('/api/events', cookieHeader).catch(() => [])
 
-  const upcoming = events?.filter(
-    (e) => e.scheduled_date && new Date(e.scheduled_date) >= new Date()
-  ) ?? []
-  const past = events?.filter(
-    (e) => !e.scheduled_date || new Date(e.scheduled_date) < new Date()
-  ) ?? []
+  const now = new Date()
+  const upcoming = (events as Event[]).filter(
+    (e) => e.scheduled_date && new Date(e.scheduled_date) >= now,
+  )
+  const past = (events as Event[]).filter(
+    (e) => !e.scheduled_date || new Date(e.scheduled_date) < now,
+  )
 
   return (
     <div className="space-y-6">
@@ -64,8 +64,8 @@ export default async function EventsPage() {
         {upcoming.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {upcoming.map((event) => {
-              const typeConf = eventTypeConfig[event.event_type] ?? eventTypeConfig.workshop
-              const statusConf = statusConfig[event.status] ?? statusConfig.draft
+              const typeConf   = eventTypeConfig[event.event_type] ?? eventTypeConfig.workshop
+              const statusConf = statusConfig[event.status]        ?? statusConfig.draft
               return (
                 <Card key={event.id} className="border-border/50">
                   <CardContent className="pt-5">
@@ -123,7 +123,10 @@ export default async function EventsPage() {
             {past.slice(0, 5).map((event) => {
               const typeConf = eventTypeConfig[event.event_type] ?? eventTypeConfig.workshop
               return (
-                <div key={event.id} className="flex items-center justify-between py-2.5 border-b border-border/30 last:border-0">
+                <div
+                  key={event.id}
+                  className="flex items-center justify-between py-2.5 border-b border-border/30 last:border-0"
+                >
                   <div className="flex items-center gap-3 min-w-0">
                     <span className={`text-xs px-2 py-0.5 rounded-full ${typeConf.color} flex-shrink-0`}>
                       {typeConf.label}

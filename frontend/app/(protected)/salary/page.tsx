@@ -1,9 +1,10 @@
-import { createClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Wallet, TrendingUp, AlertTriangle } from 'lucide-react'
+import { Wallet, AlertTriangle } from 'lucide-react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import { apiServer } from '@/lib/api/client'
+import type { SkillCluster, SalarySimulation } from '@/lib/api/types'
 
 const experienceBandLabels: Record<string, string> = {
   junior: 'Junior (0–2 ans)',
@@ -12,22 +13,22 @@ const experienceBandLabels: Record<string, string> = {
 }
 
 export default async function SalaryPage() {
-  const supabase = await createClient()
+  const cookieStore = await cookies()
+  const cookieHeader = cookieStore.getAll().map((c) => `${c.name}=${c.value}`).join('; ')
+
   const now = new Date()
   const year = now.getFullYear()
   const month = now.getMonth() + 1
 
-  const [{ data: clusters }, { data: simulations }] = await Promise.all([
-    supabase.from('skill_clusters').select('*').order('name'),
-    supabase
-      .from('salary_simulations')
-      .select('*, skill_clusters(name, color)')
-      .eq('period_year', year)
-      .eq('period_month', month)
-      .order('p50_salary', { ascending: false }),
+  const [clusters, simulations] = await Promise.all([
+    apiServer<SkillCluster[]>('/api/salary/clusters', cookieHeader).catch(() => []),
+    apiServer<SalarySimulation[]>(
+      `/api/salary/simulations?year=${year}&month=${month}`,
+      cookieHeader,
+    ).catch(() => []),
   ])
 
-  const formatSalary = (val: number | null) =>
+  const formatSalary = (val: number | null | undefined) =>
     val ? `${Math.round(val / 1000)}k€` : '—'
 
   return (
@@ -44,16 +45,16 @@ export default async function SalaryPage() {
       <div>
         <h2 className="text-base font-semibold mb-3">Clusters de compétences</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
-          {clusters?.map((cluster) => (
+          {(clusters as SkillCluster[]).map((cluster) => (
             <Card key={cluster.id} className="border-border/50">
               <CardContent className="pt-4 pb-3">
                 <div
                   className="w-3 h-3 rounded-full mb-2"
-                  style={{ backgroundColor: cluster.color }}
+                  style={{ backgroundColor: cluster.color ?? '#6366f1' }}
                 />
                 <p className="text-sm font-medium leading-snug">{cluster.name}</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {cluster.skill_ids.length} compétence{cluster.skill_ids.length > 1 ? 's' : ''}
+                  {cluster.skill_ids?.length ?? 0} compétence{(cluster.skill_ids?.length ?? 0) > 1 ? 's' : ''}
                 </p>
               </CardContent>
             </Card>
@@ -72,7 +73,7 @@ export default async function SalaryPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {simulations && simulations.length > 0 ? (
+          {(simulations as SalarySimulation[]).length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -86,21 +87,12 @@ export default async function SalaryPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {simulations.map((sim) => {
-                    const cluster = sim.skill_clusters as unknown as { name: string; color: string } | null
+                  {(simulations as SalarySimulation[]).map((sim) => {
                     const isLowConfidence = (sim.confidence_score ?? 1) < 0.5
                     return (
                       <tr key={sim.id} className="border-b border-border/30 last:border-0 hover:bg-muted/30">
                         <td className="py-3 pr-4">
-                          <div className="flex items-center gap-2">
-                            {cluster && (
-                              <div
-                                className="w-2 h-2 rounded-full flex-shrink-0"
-                                style={{ backgroundColor: cluster.color }}
-                              />
-                            )}
-                            <span className="font-medium">{cluster?.name ?? '—'}</span>
-                          </div>
+                          <span className="font-medium">{sim.cluster_name ?? '—'}</span>
                         </td>
                         <td className="py-3 pr-4 text-muted-foreground text-xs">
                           {sim.experience_band ? experienceBandLabels[sim.experience_band] : '—'}

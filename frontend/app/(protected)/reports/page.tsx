@@ -1,25 +1,25 @@
-import { createClient } from '@/lib/supabase/server'
+import React from 'react'
+import { cookies } from 'next/headers'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { FileText, Download, Plus, BarChart3, TrendingUp, BookOpen } from 'lucide-react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import { apiServer } from '@/lib/api/client'
+import type { MonthlyReport } from '@/lib/api/types'
 
-const reportTypeConfig = {
+const reportTypeConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   monthly_skills:    { label: 'Compétences', icon: TrendingUp, color: 'bg-indigo-500/10 text-indigo-500' },
-  salary_simulation: { label: 'Salaires', icon: BarChart3, color: 'bg-emerald-500/10 text-emerald-500' },
-  program_alignment: { label: 'Alignement', icon: BookOpen, color: 'bg-purple-500/10 text-purple-500' },
+  salary_simulation: { label: 'Salaires',    icon: BarChart3,  color: 'bg-emerald-500/10 text-emerald-500' },
+  program_alignment: { label: 'Alignement',  icon: BookOpen,   color: 'bg-purple-500/10 text-purple-500' },
 }
 
 export default async function ReportsPage() {
-  const supabase = await createClient()
+  const cookieStore = await cookies()
+  const cookieHeader = cookieStore.getAll().map((c) => `${c.name}=${c.value}`).join('; ')
 
-  const { data: reports } = await supabase
-    .from('monthly_reports')
-    .select('*')
-    .order('period_year', { ascending: false })
-    .order('period_month', { ascending: false })
+  const reports = await apiServer<MonthlyReport[]>('/api/reports', cookieHeader).catch(() => [])
 
   return (
     <div className="space-y-6">
@@ -36,15 +36,15 @@ export default async function ReportsPage() {
         </Button>
       </div>
 
-      {reports && reports.length > 0 ? (
+      {(reports as MonthlyReport[]).length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {reports.map((report) => {
-            const cfg = reportTypeConfig[report.report_type] ?? reportTypeConfig.monthly_skills
+          {(reports as MonthlyReport[]).map((report) => {
+            const cfg  = reportTypeConfig[report.report_type] ?? reportTypeConfig.monthly_skills
             const Icon = cfg.icon
             const periodLabel = format(
               new Date(report.period_year, report.period_month - 1),
               'MMMM yyyy',
-              { locale: fr }
+              { locale: fr },
             )
 
             return (
@@ -68,7 +68,9 @@ export default async function ReportsPage() {
                 <CardContent>
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">
-                      {format(new Date(report.generated_at), 'dd MMM yyyy à HH:mm', { locale: fr })}
+                      {report.generated_at
+                        ? format(new Date(report.generated_at), 'dd MMM yyyy à HH:mm', { locale: fr })
+                        : '—'}
                     </span>
                     {report.pdf_storage_path && (
                       <Button size="sm" variant="ghost" className="h-7 text-xs gap-1.5">
