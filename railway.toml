@@ -1,0 +1,22 @@
+# ============================================================
+# EUGENIA ACADEMICS — Railway Configuration
+# ============================================================
+# Railway auto-detects Next.js via Nixpacks.
+# This file configures the two services:
+#   1. web        → Next.js app  (main service)
+#   2. cron-worker → Cron jobs   (separate service, same repo)
+#
+# Setup in Railway dashboard:
+#   - Service "web"         : Start command = npm start
+#   - Service "cron-worker" : Start command = npx tsx workers/cron.ts
+# ============================================================
+
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "npm start"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

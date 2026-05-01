@@ -1,0 +1,86 @@
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
+import { isEmailAllowed } from '@/lib/auth/domain-guard'
+
+export async function proxy(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({
+    request,
+  })
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          )
+          supabaseResponse = NextResponse.next({
+            request,
+          })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          )
+        },
+      },
+    }
+  )
+
+  // Refresh session — IMPORTANT: do not add logic between createServerClient and getUser
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const pathname = request.nextUrl.pathname
+
+  // Public paths that don't require auth
+  const publicPaths = ['/login', '/auth/callback', '/api/scraping/webhook']
+  const isPublicPath = publicPaths.some((p) => pathname.startsWith(p))
+
+  // ── Not authenticated ──────────────────────────────────────
+  if (!user && !isPublicPath) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
+
+  // ── Authenticated but wrong domain ─────────────────────────
+  if (user && !isPublicPath) {
+    const email = user.email ?? ''
+
+    if (!isEmailAllowed(email)) {
+      // Sign out and redirect with error
+      await supabase.auth.signOut()
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      url.searchParams.set('error', 'unauthorized_domain')
+      return NextResponse.redirect(url)
+    }
+  }
+
+  // ── Already logged in, visiting login page ─────────────────
+  if (user && pathname === '/login') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard'
+    return NextResponse.redirect(url)
+  }
+
+  return supabaseResponse
+}
+
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization)
+     * - favicon.ico
+     * - public folder
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
+}
