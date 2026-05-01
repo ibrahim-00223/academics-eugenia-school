@@ -1,7 +1,18 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir=false --import-alias=\"@/*\" --use-npm --yes)"
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir=false --import-alias=\"@/*\" --use-npm --yes)",
+      "Bash(npm install *)",
+      "Bash(npx shadcn@latest init --yes --base-color slate --css-variables)",
+      "Bash(npx tsc *)",
+      "Bash(xargs grep *)",
+      "Bash(npm run *)",
+      "Bash(mkdir -p frontend backend)",
+      "Bash(mv app *)",
+      "Bash(mv .nvmrc .node-version frontend/)",
+      "Bash(mv node_modules frontend/)",
+      "Bash(mv railway.toml frontend/railway.toml)",
+      "Bash(git add *)"
     ]
   }
 }

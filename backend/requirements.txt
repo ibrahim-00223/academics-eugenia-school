@@ -1,0 +1,42 @@
+# ── Web Framework ─────────────────────────────────────────────
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+
+# ── Database ──────────────────────────────────────────────────
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+alembic==1.14.0
+
+# ── Auth & Security ───────────────────────────────────────────
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+authlib==1.4.1
+httpx==0.28.1          # async HTTP client (OAuth + scraping)
+
+# ── Validation ────────────────────────────────────────────────
+pydantic==2.10.4
+pydantic-settings==2.7.0
+email-validator==2.2.0
+
+# ── AI & Scraping ─────────────────────────────────────────────
+anthropic==0.45.0
+openai==1.59.9
+apify-client==1.8.1
+
+# ── Scraping utils ────────────────────────────────────────────
+feedparser==6.0.11      # RSS podcast feeds
+beautifulsoup4==4.12.3
+lxml==5.3.0
+
+# ── PDF Reports ───────────────────────────────────────────────
+reportlab==4.3.0
+weasyprint==62.3
+
+# ── Task scheduling ───────────────────────────────────────────
+apscheduler==3.11.0
+
+# ── Utilities ─────────────────────────────────────────────────
+python-dateutil==2.9.0
+pytz==2024.2
+tenacity==9.0.0         # Retry logic for scrapers
